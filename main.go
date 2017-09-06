@@ -8,8 +8,8 @@ import (
 )
 
 func connectToWebSocket(ws_channel, quite_channel chan string) {
-	var origin = "http://localhost:10000"
-	var url = "ws://localhost:10001/"
+	const origin = "http://localhost:10000"
+	const url = "ws://localhost:10001/"
 
 	ws, err := websocket.Dial(url, "", origin)
 	if err != nil {
@@ -22,9 +22,13 @@ func connectToWebSocket(ws_channel, quite_channel chan string) {
 		var message string
 		websocket.Message.Receive(ws, &message)
 		if strings.Compare(message, "") == 0 {
-			//empty string received means connection closed
-			quite_channel <- "Empty string received, Seems to be connection closed!"
-			return
+			//empty string received this could be a result of broken pipe
+			//so write some data to the websocket and verify it!
+			_, err := ws.Write([]byte("test for broken pipe"))
+			if err != nil {
+				quite_channel <- "Connection seems to be closed. " + err.Error()
+				return
+			}
 		} else {
 			ws_channel <- message
 		}
