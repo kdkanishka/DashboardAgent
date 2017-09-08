@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"encoding/json"
+	"time"
 )
 
 func connectToWebSocket(ws_channel, quite_channel chan string) {
@@ -37,6 +38,7 @@ func connectToWebSocket(ws_channel, quite_channel chan string) {
 }
 
 func handleFrame(frame string, notification_channel chan Notification) {
+	timeStamp := time.Now().Unix()
 	if strings.Contains(frame, "InitialMonitoredService") {
 		var initialMonitoredService InitialMonitoredServiceResponse
 		error := json.Unmarshal([]byte(frame), &initialMonitoredService)
@@ -45,9 +47,10 @@ func handleFrame(frame string, notification_channel chan Notification) {
 		}
 		for _, monitoredService := range initialMonitoredService.InitialMonitoredService.Items {
 			notification := Notification{
-				name:   monitoredService.ServiceName,
-				status: monitoredService.State,
-				item:   monitoredService,
+				name:      monitoredService.ServiceName,
+				status:    monitoredService.State,
+				item:      monitoredService,
+				timestamp: timeStamp,
 			}
 			notification_channel <- notification
 		}
@@ -59,9 +62,10 @@ func handleFrame(frame string, notification_channel chan Notification) {
 		}
 		for _, monitoredService := range updated.UpdatedMonitoredService.Items {
 			notification := Notification{
-				name:   monitoredService.ServiceName,
-				status: monitoredService.State,
-				item:   monitoredService,
+				name:      monitoredService.ServiceName,
+				status:    monitoredService.State,
+				item:      monitoredService,
+				timestamp: timeStamp,
 			}
 			notification_channel <- notification
 		}
@@ -81,14 +85,18 @@ func processNotifications(notifications_map map[string]Notification, notificatio
 				//notify service back to normal
 				return ResetAlarm{notification: notification}
 			} else {
-				notifications_map[notification.status] = notification
+				notifications_map[notification.name] = notification
 				//notify alarm state to the dashboard
 				return PublishAlarm{notifications_map: notifications_map}
 			}
+		} else {
+			//no state change but notification received over and over again
+			notifications_map[notification.name] = notification
+			return DoNothing{}
 		}
 	} else {
 		if notification.status != "Ok" {
-			notifications_map[notification.status] = notification
+			notifications_map[notification.name] = notification
 			//notify alarm state to the dashboard
 			return PublishAlarm{notifications_map: notifications_map}
 		}
