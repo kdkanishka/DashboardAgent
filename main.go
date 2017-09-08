@@ -68,8 +68,36 @@ func handleFrame(frame string, notification_channel chan Notification) {
 	}
 }
 
+func processNotifications(notifications_map map[string]Notification, notification Notification) Command {
+	prev_notification, valueExists := notifications_map[notification.name]
+	if valueExists {
+		prevState := prev_notification
+		if notification.status != prevState.status {
+			//state change! take necessary actions
+
+			//check whether the service is back to its Ok state
+			if notification.status == "Ok" {
+				delete(notifications_map, notification.name)
+				//notify service back to normal
+				return ResetAlarm{notification: notification}
+			} else {
+				notifications_map[notification.status] = notification
+				//notify alarm state to the dashboard
+				return PublishAlarm{notifications_map: notifications_map}
+			}
+		}
+	} else {
+		if notification.status != "Ok" {
+			notifications_map[notification.status] = notification
+			//notify alarm state to the dashboard
+			return PublishAlarm{notifications_map: notifications_map}
+		}
+	}
+	return DoNothing{}
+}
+
 func main() {
-	notifications := make(map[string]Notification)
+	notifications_map := make(map[string]Notification)
 
 	ws_channel := make(chan string)
 	quite_channel := make(chan string)
@@ -82,7 +110,7 @@ func main() {
 			fmt.Printf("Frame receieved %s \n", frame)
 			go handleFrame(frame, notification_channel)
 		case notification := <-notification_channel:
-			fmt.Println(notification)
+			processNotifications(notifications_map, notification)
 		case sig_quite := <-quite_channel:
 			fmt.Printf("Exit signal received! %s\n", sig_quite)
 			log.Fatal("Exiting since error occured")
