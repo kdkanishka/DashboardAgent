@@ -7,6 +7,12 @@ import (
 	"strings"
 	"encoding/json"
 	"time"
+	"./utils"
+	"flag"
+)
+
+var (
+	logpath = flag.String("logpath", "/tmp/dashboardagent.log", "Log Path")
 )
 
 func connectToWebSocket(ws_channel, quite_channel chan string) {
@@ -47,10 +53,10 @@ func handleFrame(frame string, notification_channel chan Notification) {
 		}
 		for _, monitoredService := range initialMonitoredService.InitialMonitoredService.Items {
 			notification := Notification{
-				name:      monitoredService.ServiceName,
-				status:    monitoredService.State,
-				item:      monitoredService,
-				timestamp: timeStamp,
+				Name:      monitoredService.ServiceName,
+				Status:    monitoredService.State,
+				Item:      monitoredService,
+				Timestamp: timeStamp,
 			}
 			notification_channel <- notification
 		}
@@ -62,50 +68,52 @@ func handleFrame(frame string, notification_channel chan Notification) {
 		}
 		for _, monitoredService := range updated.UpdatedMonitoredService.Items {
 			notification := Notification{
-				name:      monitoredService.ServiceName,
-				status:    monitoredService.State,
-				item:      monitoredService,
-				timestamp: timeStamp,
+				Name:      monitoredService.ServiceName,
+				Status:    monitoredService.State,
+				Item:      monitoredService,
+				Timestamp: timeStamp,
 			}
 			notification_channel <- notification
 		}
 	}
 }
 
-func processNotifications(notifications_map map[string]Notification, notification Notification) Command {
-	prev_notification, valueExists := notifications_map[notification.name]
+func processNotifications(notificationsMapParam map[string]Notification, notification Notification) Command {
+	prev_notification, valueExists := notificationsMapParam[notification.Name]
 	if valueExists {
 		prevState := prev_notification
-		if notification.status != prevState.status {
+		if notification.Status != prevState.Status {
 			//state change! take necessary actions
 
 			//check whether the service is back to its Ok state
-			if notification.status == "Ok" {
-				delete(notifications_map, notification.name)
+			if notification.Status == "Ok" {
+				delete(notificationsMapParam, notification.Name)
 				//notify service back to normal
-				return ResetAlarm{notification: notification}
+				return ResetAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
 			} else {
-				notifications_map[notification.name] = notification
+				notificationsMapParam[notification.Name] = notification
 				//notify alarm state to the dashboard
-				return PublishAlarm{notifications_map: notifications_map}
+				return PublishAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
 			}
 		} else {
 			//no state change but notification received over and over again
-			notifications_map[notification.name] = notification
+			notificationsMapParam[notification.Name] = notification
 			return DoNothing{}
 		}
 	} else {
-		if notification.status != "Ok" {
-			notifications_map[notification.name] = notification
+		if notification.Status != "Ok" {
+			notificationsMapParam[notification.Name] = notification
 			//notify alarm state to the dashboard
-			return PublishAlarm{notifications_map: notifications_map}
+			return PublishAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
 		}
 	}
 	return DoNothing{}
 }
 
 func main() {
-	notifications_map := make(map[string]Notification)
+	utils.NewLog(*logpath)
+	utils.Log.Println("Initializing Dashboard Agent!")
+	notificationsMap := make(map[string]Notification)
 
 	ws_channel := make(chan string)
 	quite_channel := make(chan string)
@@ -115,12 +123,12 @@ func main() {
 	for {
 		select {
 		case frame := <-ws_channel:
-			fmt.Printf("Frame receieved %s \n", frame)
+			utils.Log.Printf("Frame receieved %s \n", frame)
 			go handleFrame(frame, notification_channel)
 		case notification := <-notification_channel:
-			processNotifications(notifications_map, notification)
+			processNotifications(notificationsMap, notification)
 		case sig_quite := <-quite_channel:
-			fmt.Printf("Exit signal received! %s\n", sig_quite)
+			utils.Log.Printf("Exit signal received! %s\n", sig_quite)
 			log.Fatal("Exiting since error occured")
 		}
 	}

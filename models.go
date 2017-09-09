@@ -32,8 +32,8 @@ type Alarm struct {
 }
 
 type Notification struct {
-	name      string
-	item      InitialMonitoredServiceItem
-	status    string
-	timestamp int64
+	Name      string
+	Item      InitialMonitoredServiceItem
+	Status    string
+	Timestamp int64
 }
