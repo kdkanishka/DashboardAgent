@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"golang.org/x/net/websocket"
 	"log"
 	"strings"
@@ -49,7 +48,7 @@ func handleFrame(frame string, notification_channel chan Notification) {
 		var initialMonitoredService InitialMonitoredServiceResponse
 		error := json.Unmarshal([]byte(frame), &initialMonitoredService)
 		if error == nil {
-			fmt.Println("Successfully unmarshalled InitialMonitoredService")
+			utils.Log.Println("Successfully unmarshalled InitialMonitoredService")
 		}
 		for _, monitoredService := range initialMonitoredService.InitialMonitoredService.Items {
 			notification := Notification{
@@ -64,7 +63,7 @@ func handleFrame(frame string, notification_channel chan Notification) {
 		var updated UpdatedMonitoredServiceResponse
 		error := json.Unmarshal([]byte(frame), &updated)
 		if error == nil {
-			fmt.Println("Successfully unmarshalled UpdatedMonitoredService")
+			utils.Log.Println("Successfully unmarshalled UpdatedMonitoredService")
 		}
 		for _, monitoredService := range updated.UpdatedMonitoredService.Items {
 			notification := Notification{
@@ -123,10 +122,11 @@ func main() {
 	for {
 		select {
 		case frame := <-ws_channel:
-			utils.Log.Printf("Frame receieved %s \n", frame)
+			//utils.Log.Printf("Frame receieved %s \n", frame)
 			go handleFrame(frame, notification_channel)
 		case notification := <-notification_channel:
-			processNotifications(notificationsMap, notification)
+			resultingCommand := processNotifications(notificationsMap, notification)
+			resultingCommand.exec()
 		case sig_quite := <-quite_channel:
 			utils.Log.Printf("Exit signal received! %s\n", sig_quite)
 			log.Fatal("Exiting since error occured")

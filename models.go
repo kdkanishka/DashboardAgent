@@ -28,12 +28,12 @@ type Alarm struct {
 	AlarmType       string `json:"alarmType"`
 	Origin          string `json:"origin"`
 	Details         string `json:"details"`
-	Severity        string `json:severity`
+	Severity        string `json:"severity"`
 }
 
 type Notification struct {
-	Name      string
-	Item      InitialMonitoredServiceItem
-	Status    string
-	Timestamp int64
+	Name      string                      `json:"name"`
+	Item      InitialMonitoredServiceItem `json:"item"`
+	Status    string                      `json:"status"`
+	Timestamp int64                       `json:"timestamp"`
 }
