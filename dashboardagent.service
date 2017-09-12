@@ -1,0 +1,10 @@
+[Unit]
+Description=KRadiator-Dashbard integration agent to listen monitor service events
+
+[Service]
+Restart=on-failure
+Type=forking
+ExecStart=/home/pagero/apps/kradiatoragent/DashboardAgent
+
+[Install]
+WantedBy=multi-user.target
