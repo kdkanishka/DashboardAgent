@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"io/ioutil"
-	"flag"
+	"os"
 )
 
 type Configuration struct {
@@ -11,12 +11,11 @@ type Configuration struct {
 }
 
 func Read() Configuration {
-	flagFile := flag.String("config", "config.json", "Configuration file")
-	flag.Parse()
+	configFile := os.Args[1]
 
-	fileContent, error := ioutil.ReadFile(*flagFile)
+	fileContent, error := ioutil.ReadFile(configFile)
 	if error != nil {
-		Log.Printf("Unable to open configuration file %s File:%s\n", error.Error(), *flagFile)
+		Log.Printf("Unable to open configuration file %s File:%s\n", error.Error(), configFile)
 		panic("Unable to continue! since configuration file is not available")
 	}
 
