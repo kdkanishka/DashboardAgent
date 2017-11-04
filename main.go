@@ -78,9 +78,9 @@ func handleFrame(frame string, notification_channel chan Notification) {
 }
 
 func processNotifications(notificationsMapParam map[string]Notification, notification Notification) Command {
-	prev_notification, valueExists := notificationsMapParam[notification.Name]
+	prevNotification, valueExists := notificationsMapParam[notification.Name]
 	if valueExists {
-		prevState := prev_notification
+		prevState := prevNotification
 		if notification.Status != prevState.Status {
 			//state change! take necessary actions
 
@@ -109,6 +109,15 @@ func processNotifications(notificationsMapParam map[string]Notification, notific
 	return DoNothing{}
 }
 
+func deliveryErrorFetchScheduler() {
+	//initial executution
+	utils.FetchDeliveryErrors()
+
+	for range time.Tick(2 * time.Minute) {
+		utils.FetchDeliveryErrors()
+	}
+}
+
 func main() {
 	utils.NewLog(*logpath)
 	utils.Log.Println("Initializing Dashboard Agent!")
@@ -117,6 +126,8 @@ func main() {
 	ws_channel := make(chan string)
 	quite_channel := make(chan string)
 	notification_channel := make(chan Notification)
+
+	go deliveryErrorFetchScheduler()
 	go connectToWebSocket(ws_channel, quite_channel)
 
 	for {

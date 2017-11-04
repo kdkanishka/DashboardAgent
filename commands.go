@@ -5,11 +5,6 @@ import (
 	"./utils"
 )
 
-func kradiatorNotificationEndpoint() string {
-	config := utils.Read()
-	return config.KradiatorEndpoint
-}
-
 type Command interface {
 	exec()
 }
@@ -36,7 +31,7 @@ func (command PublishAlarm) exec() {
 	}
 
 	//post
-	utils.Post(serialized, kradiatorNotificationEndpoint() + "/PublishAlarm")
+	utils.Post(serialized, utils.KradiatorNotificationEndpoint() + "/PublishAlarm")
 }
 
 func (command ResetAlarm) exec() {
@@ -48,7 +43,7 @@ func (command ResetAlarm) exec() {
 	}
 
 	//post
-	utils.Post(serialized, kradiatorNotificationEndpoint() + "/ResetAlarm")
+	utils.Post(serialized, utils.KradiatorNotificationEndpoint() + "/ResetAlarm")
 }
 
 func (Command DoNothing) exec() {

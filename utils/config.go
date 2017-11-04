@@ -10,6 +10,11 @@ type Configuration struct {
 	KradiatorEndpoint string `json:"kradiatorEndpoint"`
 }
 
+func KradiatorNotificationEndpoint() string {
+	config := Read()
+	return config.KradiatorEndpoint
+}
+
 func Read() Configuration {
 	configFile := os.Args[1]
 
