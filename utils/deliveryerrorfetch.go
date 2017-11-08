@@ -27,9 +27,8 @@ func FetchDeliveryErrors() {
 	deliveryErrMap1, err1 := getErrorLogsForService(command1, command2)
 	deliveryErrMap2, err2 := getErrorLogsForService(command3, command4)
 
-	Log.Println("Fetching delivery errors done.")
-
 	if err1 == nil && err2 == nil {
+		Log.Println("Successfully completed fetching delivery errors!")
 		deliveryServiceSendErros := DeliveryServiceSendErrors{Data: make(map[string]map[string]int)}
 		deliveryServiceSendErros.Data["delivery1"] = deliveryErrMap1
 		deliveryServiceSendErros.Data["delivery2"] = deliveryErrMap2
@@ -38,9 +37,17 @@ func FetchDeliveryErrors() {
 		if jsonErr == nil {
 			Log.Println(string(serialized))
 			//POST data to KRadiator
-			Post(serialized, KradiatorNotificationEndpoint() + "/DeliveryServiceSendErrors")
+			Post(serialized, KradiatorNotificationEndpoint()+"/DeliveryServiceSendErrors")
 		} else {
 			Log.Println(jsonErr)
+		}
+	} else {
+		Log.Println("Failed to fetch delivery errors!")
+		if err1 != nil {
+			Log.Println(err1.Error())
+		}
+		if err2 != nil {
+			Log.Println(err2.Error())
 		}
 	}
 }
@@ -57,27 +64,33 @@ func getErrorLogsForService(commands ...string) (map[string]int, error) {
 }
 
 func compileFinalOtput(output chan string, errFlagChan chan bool, expectedOutputCOunt int) (map[string]int, error) {
+	Log.Println("Preparing final output..")
 	dataMap := make(map[string]int)
 	for i := 0; i < expectedOutputCOunt; i++ {
 		select {
 		case output := <-output:
+			Log.Println("Processing today's error count")
 			if parsedCount, err := strconv.Atoi(strings.TrimSpace(output)); err == nil {
 				//recieved todays error count
 				year, month, day := time.Now().Date()
 				today := fmt.Sprintf("%d-%d-%d", year, month, day)
 				dataMap[today] = parsedCount
 			} else {
+				Log.Println("Processing old logs data")
 				fetchedMap := logFileDataToMap(output)
 				for k, v := range fetchedMap {
 					dataMap[k] = v
 				}
 			}
 		case <-errFlagChan:
+			Log.Println("unable to execute command successfully")
 			return nil, errors.New("unable to execute command successfully")
 		case <-time.After(time.Minute * 3):
-			return nil, errors.New("unable to wait until commands complete, timeout occur")
+			Log.Println("unable to wait until commands complete, timeout occured")
+			return nil, errors.New("unable to wait until commands complete, timeout occured")
 		}
 	}
+	Log.Println("Prepared final output successfully!")
 	return dataMap, nil
 }
 
@@ -87,13 +100,16 @@ func execProcess(command string, output chan string, errFlag chan bool) {
 	out, err := cmd.Output()
 	//stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
+		Log.Printf("Error occured while executing command %s \n Error : %s", command, err.Error())
 		errFlag <- true
 	}
-	Log.Printf("Done with command %s \n", command)
-	output <- string(out)
+	commandOutput := string(out)
+	Log.Printf("Done with command %s \n Command output %s", command, commandOutput)
+	output <- commandOutput
 }
 
 func logFileDataToMap(logData string) map[string]int {
+	Log.Println("Converting old log file data to a map")
 	dataMap := make(map[string]int)
 	scanner := bufio.NewScanner(strings.NewReader(logData))
 	for scanner.Scan() {
@@ -107,6 +123,6 @@ func logFileDataToMap(logData string) map[string]int {
 			dataMap[splitted[0]] = errorCount
 		}
 	}
+	Log.Println("Converted old log file data to a map successfully!")
 	return dataMap
 }
-

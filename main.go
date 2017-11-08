@@ -113,7 +113,7 @@ func deliveryErrorFetchScheduler() {
 	//initial executution
 	utils.FetchDeliveryErrors()
 
-	for range time.Tick(2 * time.Minute) {
+	for range time.Tick(30 * time.Minute) {
 		utils.FetchDeliveryErrors()
 	}
 }
