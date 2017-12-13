@@ -1,13 +1,14 @@
 package main
 
 import (
-	"golang.org/x/net/websocket"
+	"encoding/json"
+	"flag"
 	"log"
 	"strings"
-	"encoding/json"
 	"time"
+
 	"./utils"
-	"flag"
+	"golang.org/x/net/websocket"
 )
 
 var (
@@ -118,6 +119,12 @@ func deliveryErrorFetchScheduler() {
 	}
 }
 
+func heartBeatScheduler() {
+	for range time.Tick(3 * time.Minute) {
+		utils.PublishHeartbeat()
+	}
+}
+
 func main() {
 	utils.NewLog(*logpath)
 	utils.Log.Println("Initializing Dashboard Agent!")
@@ -129,6 +136,7 @@ func main() {
 
 	go deliveryErrorFetchScheduler()
 	go connectToWebSocket(ws_channel, quite_channel)
+	go heartBeatScheduler()
 
 	for {
 		select {

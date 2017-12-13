@@ -1,3 +1,3 @@
 {
-  "kradiatorEndpoint": "http://10.4.1.33:9090"
+  "kradiatorEndpoint": "http://localhost:9090"
 }

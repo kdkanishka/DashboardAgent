@@ -1,18 +1,22 @@
 package utils
 
 import (
-	"time"
-	"errors"
-	"os/exec"
 	"bufio"
-	"strings"
-	"strconv"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type DeliveryServiceSendErrors struct {
 	Data map[string]map[string]int `json:"data"`
+}
+
+func PublishHeartbeat() {
+	Get("QUPV6ZLHXD47GIGW", "https://api.thingspeak.com")
 }
 
 func FetchDeliveryErrors() {
