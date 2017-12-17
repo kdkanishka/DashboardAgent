@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"./utils"
+	"github.com/kdkanishka/DashboardAgent/utils"
 	"golang.org/x/net/websocket"
 )
 

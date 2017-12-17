@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"./utils"
+	"github.com/kdkanishka/DashboardAgent/utils"
 )
 
 type Command interface {
