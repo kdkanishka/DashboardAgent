@@ -136,7 +136,7 @@ func main() {
 
 	go deliveryErrorFetchScheduler()
 	go connectToWebSocket(ws_channel, quite_channel)
-	go heartBeatScheduler()
+	//go heartBeatScheduler()
 
 	for {
 		select {
