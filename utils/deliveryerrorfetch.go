@@ -119,7 +119,7 @@ func logFileDataToMap(logData string) map[string]int {
 	for scanner.Scan() {
 		line := scanner.Text()
 		//fmt.Println(line)
-		key := strings.Replace(strings.Replace(line, "delivery-service.log-", "", 1), ".zip", "", 1)
+		key := strings.Replace(strings.Replace(line, "protocol-router-service.log-", "", 1), ".zip", "", 1)
 		splitted := strings.Split(key, " ")
 
 		errorCount, err := strconv.Atoi(splitted[1])
