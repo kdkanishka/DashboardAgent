@@ -22,11 +22,11 @@ func PublishHeartbeat() {
 func FetchDeliveryErrors() {
 	Log.Printf("Fetching delivery errors..")
 
-	command1 := "ssh thn-prod-service4 'cd /var/log/services/delivery1/old_logs/;for X in *; do printf $X; printf \" \"; zgrep \"SEND_ERROR\" $X | wc -l; done'"
-	command2 := "ssh thn-prod-service4 'grep \"SEND_ERROR\" /var/log/services/delivery1/delivery-service.log | wc -l'"
+	command1 := "ssh thn-prod-service4 'cd /var/log/services/protocol-router1/old_logs/;for X in *; do printf $X; printf \" \"; zgrep \"SEND_ERROR\" $X | wc -l; done'"
+	command2 := "ssh thn-prod-service4 'grep \"SEND_ERROR\" /var/log/services/protocol-router1/protocol-router-service.log | wc -l'"
 
-	command3 := "ssh thn-prod-service4 'cd /var/log/services/delivery2/old_logs/;for X in *; do printf $X; printf \" \"; zgrep \"SEND_ERROR\" $X | wc -l; done'"
-	command4 := "ssh thn-prod-service4 'grep \"SEND_ERROR\" /var/log/services/delivery2/delivery-service.log | wc -l'"
+	command3 := "ssh thn-prod-service4 'cd /var/log/services/protocol-router2/old_logs/;for X in *; do printf $X; printf \" \"; zgrep \"SEND_ERROR\" $X | wc -l; done'"
+	command4 := "ssh thn-prod-service4 'grep \"SEND_ERROR\" /var/log/services/protocol-router1/protocol-router-service.log | wc -l'"
 
 	deliveryErrMap1, err1 := getErrorLogsForService(command1, command2)
 	deliveryErrMap2, err2 := getErrorLogsForService(command3, command4)
