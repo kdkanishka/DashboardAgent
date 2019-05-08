@@ -110,21 +110,6 @@ func processNotifications(notificationsMapParam map[string]Notification, notific
 	return DoNothing{}
 }
 
-func deliveryErrorFetchScheduler() {
-	//initial executution
-	utils.FetchDeliveryErrors()
-
-	for range time.Tick(30 * time.Minute) {
-		utils.FetchDeliveryErrors()
-	}
-}
-
-func heartBeatScheduler() {
-	for range time.Tick(3 * time.Minute) {
-		utils.PublishHeartbeat()
-	}
-}
-
 func main() {
 	utils.NewLog(*logpath)
 	utils.Log.Println("Initializing Dashboard Agent!")
@@ -134,7 +119,6 @@ func main() {
 	quite_channel := make(chan string)
 	notification_channel := make(chan Notification)
 
-	go deliveryErrorFetchScheduler()
 	go connectToWebSocket(ws_channel, quite_channel)
 	//go heartBeatScheduler()
 
