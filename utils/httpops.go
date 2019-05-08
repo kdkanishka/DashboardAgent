@@ -28,12 +28,14 @@ func Get(apikey string, url string) {
 	}
 }
 
-func Post(data []byte, url string) {
+func Post(data []byte, url string, verbose bool) {
 	response, error := http.Post(url, "application/json", bytes.NewBuffer(data))
 	defer func() {
 		if error == nil {
 			response.Body.Close()
-			Log.Printf("Response closed.")
+			if verbose {
+				Log.Printf("Response closed.")
+			}
 		}
 	}()
 
@@ -45,6 +47,8 @@ func Post(data []byte, url string) {
 		if readErr != nil {
 			Log.Printf("Unable to read from the HTTP response!, %s \n", readErr.Error())
 		}
-		Log.Printf("Response from service %s\n", string(respo))
+		if verbose {
+			Log.Printf("Response from service %s\n", string(respo))
+		}
 	}
 }

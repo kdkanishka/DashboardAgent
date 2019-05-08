@@ -15,13 +15,13 @@ var (
 	logpath = flag.String("logpath", "/tmp/dashboardagent.log", "Log Path")
 )
 
-func connectToWebSocket(ws_channel, quite_channel chan string) {
+func connectToWebSocket(wsChannel, quiteChannel chan string) {
 	const origin = "http://localhost:10000"
 	const url = "ws://localhost:10001/"
 
 	ws, err := websocket.Dial(url, "", origin)
 	if err != nil {
-		quite_channel <- "Unable to dial for the websocket " + err.Error()
+		quiteChannel <- "Unable to dial for the websocket " + err.Error()
 		return
 	}
 
@@ -34,16 +34,16 @@ func connectToWebSocket(ws_channel, quite_channel chan string) {
 			//so write some data to the websocket and verify it!
 			_, err := ws.Write([]byte("test for broken pipe"))
 			if err != nil {
-				quite_channel <- "Connection seems to be closed. " + err.Error()
+				quiteChannel <- "Connection seems to be closed. " + err.Error()
 				return
 			}
 		} else {
-			ws_channel <- message
+			wsChannel <- message
 		}
 	}
 }
 
-func handleFrame(frame string, notification_channel chan Notification) {
+func handleFrame(frame string, notificationChannel chan Notification) {
 	timeStamp := time.Now().Unix()
 	if strings.Contains(frame, "InitialMonitoredService") {
 		var initialMonitoredService InitialMonitoredServiceResponse
@@ -58,7 +58,7 @@ func handleFrame(frame string, notification_channel chan Notification) {
 				Item:      monitoredService,
 				Timestamp: timeStamp,
 			}
-			notification_channel <- notification
+			notificationChannel <- notification
 		}
 	} else if strings.Contains(frame, "UpdatedMonitoredService") {
 		var updated UpdatedMonitoredServiceResponse
@@ -73,38 +73,57 @@ func handleFrame(frame string, notification_channel chan Notification) {
 				Item:      monitoredService,
 				Timestamp: timeStamp,
 			}
-			notification_channel <- notification
+			notificationChannel <- notification
+		}
+	} else if strings.Contains(frame, "Clock") {
+		var clockFrame ClockFrame
+		error := json.Unmarshal([]byte(frame), &clockFrame)
+		if error == nil {
+			//utils.Log.Println("Successfully unmarshalled Clock") //TODO remove this line
+			//utils.Log.Println(clockFrame.Clock.Time)
+			notification := Notification{
+				IsClockNotification: true,
+				Name:                "Clock",
+				Status:              clockFrame.Clock.Time,
+			}
+			notificationChannel <- notification
 		}
 	}
 }
 
 func processNotifications(notificationsMapParam map[string]Notification, notification Notification) Command {
-	prevNotification, valueExists := notificationsMapParam[notification.Name]
-	if valueExists {
-		prevState := prevNotification
-		if notification.Status != prevState.Status {
-			//state change! take necessary actions
+	//check whether that this is just a clock notification (clock updated receives 6 times per minute)
+	if notification.IsClockNotification == true {
+		return PublishClockNotification{ClockValue: notification.Status}
+	} else {
+		//actual dashbard notification
+		prevNotification, valueExists := notificationsMapParam[notification.Name]
+		if valueExists {
+			prevState := prevNotification
+			if notification.Status != prevState.Status {
+				//state change! take necessary actions
 
-			//check whether the service is back to its Ok state
-			if notification.Status == "Ok" {
-				delete(notificationsMapParam, notification.Name)
-				//notify service back to normal
-				return ResetAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
+				//check whether the service is back to its Ok state
+				if notification.Status == "Ok" {
+					delete(notificationsMapParam, notification.Name)
+					//notify service back to normal
+					return ResetAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
+				} else {
+					notificationsMapParam[notification.Name] = notification
+					//notify alarm state to the dashboard
+					return PublishAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
+				}
 			} else {
+				//no state change but notification received over and over again
+				notificationsMapParam[notification.Name] = notification
+				return DoNothing{}
+			}
+		} else {
+			if notification.Status != "Ok" {
 				notificationsMapParam[notification.Name] = notification
 				//notify alarm state to the dashboard
 				return PublishAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
 			}
-		} else {
-			//no state change but notification received over and over again
-			notificationsMapParam[notification.Name] = notification
-			return DoNothing{}
-		}
-	} else {
-		if notification.Status != "Ok" {
-			notificationsMapParam[notification.Name] = notification
-			//notify alarm state to the dashboard
-			return PublishAlarm{NotificationsMap: notificationsMapParam, Notification: notification}
 		}
 	}
 	return DoNothing{}
@@ -115,23 +134,23 @@ func main() {
 	utils.Log.Println("Initializing Dashboard Agent!")
 	notificationsMap := make(map[string]Notification)
 
-	ws_channel := make(chan string)
-	quite_channel := make(chan string)
-	notification_channel := make(chan Notification)
+	wsChannel := make(chan string)
+	quiteChannel := make(chan string)
+	notificationChannel := make(chan Notification)
 
-	go connectToWebSocket(ws_channel, quite_channel)
+	go connectToWebSocket(wsChannel, quiteChannel)
 	//go heartBeatScheduler()
 
 	for {
 		select {
-		case frame := <-ws_channel:
+		case frame := <-wsChannel:
 			//utils.Log.Printf("Frame receieved %s \n", frame)
-			go handleFrame(frame, notification_channel)
-		case notification := <-notification_channel:
+			go handleFrame(frame, notificationChannel)
+		case notification := <-notificationChannel:
 			resultingCommand := processNotifications(notificationsMap, notification)
 			resultingCommand.exec()
-		case sig_quite := <-quite_channel:
-			utils.Log.Printf("Exit signal received! %s\n", sig_quite)
+		case sigQuite := <-quiteChannel:
+			utils.Log.Printf("Exit signal received! %s\n", sigQuite)
 			log.Fatal("Exiting since error occured")
 		}
 	}

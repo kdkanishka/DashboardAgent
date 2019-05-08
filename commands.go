@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+
 	"github.com/kdkanishka/DashboardAgent/utils"
 )
 
@@ -19,6 +20,10 @@ type ResetAlarm struct {
 	Notification     Notification            `json:"notification"`
 }
 
+type PublishClockNotification struct {
+	ClockValue string `json:"clockValue"`
+}
+
 type DoNothing struct {
 }
 
@@ -31,7 +36,7 @@ func (command PublishAlarm) exec() {
 	}
 
 	//post
-	utils.Post(serialized, utils.KradiatorNotificationEndpoint() + "/PublishAlarm")
+	utils.Post(serialized, utils.KradiatorNotificationEndpoint()+"/PublishAlarm", true)
 }
 
 func (command ResetAlarm) exec() {
@@ -43,7 +48,19 @@ func (command ResetAlarm) exec() {
 	}
 
 	//post
-	utils.Post(serialized, utils.KradiatorNotificationEndpoint() + "/ResetAlarm")
+	utils.Post(serialized, utils.KradiatorNotificationEndpoint()+"/ResetAlarm", true)
+}
+
+func (command PublishClockNotification) exec() {
+	//utils.Log.Println("Executing PublishClockNotification")
+	//encode in json
+	serialized, error := json.Marshal(command)
+	if error != nil {
+		utils.Log.Println("Unable to marshal PublishClockNotification object," + error.Error())
+	}
+
+	//post
+	utils.Post(serialized, utils.KradiatorNotificationEndpoint()+"/PublishClockNotification", false)
 }
 
 func (Command DoNothing) exec() {

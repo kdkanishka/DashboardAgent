@@ -36,4 +36,13 @@ type Notification struct {
 	Item      InitialMonitoredServiceItem `json:"item"`
 	Status    string                      `json:"status"`
 	Timestamp int64                       `json:"timestamp"`
+	IsClockNotification   bool
+}
+
+type ClockFrame struct {
+	Clock Clock `json:"Clock"`
+}
+
+type Clock struct {
+	Time string `json:"time"`
 }
