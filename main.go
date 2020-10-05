@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"time"
+	"net"
 
 	"github.com/kdkanishka/DashboardAgent/utils"
 	"golang.org/x/net/websocket"
@@ -17,7 +18,7 @@ var (
 
 func connectToWebSocket(wsChannel, quiteChannel chan string) {
 	const origin = "http://localhost:10000"
-	const url = "ws://localhost:10001/"
+	const url = "ws://localhost:10000/ws"
 
 	ws, err := websocket.Dial(url, "", origin)
 	if err != nil {
